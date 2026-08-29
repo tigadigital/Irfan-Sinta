@@ -1,0 +1,19 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Irfan & Sinta//Wedding Invitation//ID
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:irfan-sinta-20261002@wedding
+DTSTART;TZID=Asia/Jakarta:20261002T080000
+DTEND;TZID=Asia/Jakarta:20261002T200000
+SUMMARY:Pernikahan Irfan & Sinta
+LOCATION:Tulungagung, Jawa Timur
+DESCRIPTION:Akad Nikah 08.00 WIB di Rumah Mempelai Wanita, Dsn. Jeruk, Jabon, Kalidawir, Tulungagung.\n\nResepsi 13.00 WIB - Selesai di Rumah Mempelai Pria, Dsn. Mekarsari, Tunggulsari, Kedungwaru, Tulungagung.
+BEGIN:VALARM
+TRIGGER:-P1D
+ACTION:DISPLAY
+DESCRIPTION:Besok adalah pernikahan Irfan & Sinta
+END:VALARM
+END:VEVENT
+END:VCALENDAR
