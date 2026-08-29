@@ -554,55 +554,26 @@ img{max-width:100%}
 @media(max-width:390px){.countdown-grid--slim{gap:5px}.countdown-grid--slim .countdown-item{min-height:66px}.countdown-grid--slim strong{font-size:1.42rem}}
 
 
-/* RSVP media + wishes */
-.media-input-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.media-input-block{padding:16px;border-radius:20px;background:rgba(255,255,255,.48);border:1px solid rgba(94,115,54,.12)}
-.media-input-title{display:block;margin-bottom:10px;font-size:.76rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--sage-dark)}
-.media-input-title small{font-size:.66rem;font-weight:600;letter-spacing:.04em;text-transform:none;color:var(--muted)}
-.media-picker{min-height:46px;display:flex!important;align-items:center;justify-content:center;gap:8px;padding:11px 12px;border-radius:14px;border:1px dashed rgba(94,115,54,.28);background:rgba(255,255,255,.64);color:#52653a!important;font-weight:700!important;letter-spacing:0!important;cursor:pointer;text-align:center}
-.media-picker__icon{font-size:1.2rem;color:var(--gold-deep)}
-.media-native-input{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important}
-.photo-preview{display:grid;gap:9px;margin-top:10px}
-.photo-preview img{width:100%;max-height:220px;object-fit:cover;border-radius:14px;border:1px solid rgba(94,115,54,.12)}
-.media-clear-btn{justify-self:start;border:0;background:transparent;color:#8e6742;padding:0;font-size:.76rem;font-weight:700;cursor:pointer}
-.voice-controls{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center}
-.voice-btn{min-height:42px;border:1px solid rgba(94,115,54,.18);border-radius:12px;background:rgba(255,255,255,.72);color:#52653a;font-weight:700;padding:9px 11px;cursor:pointer}
-.voice-btn:disabled{opacity:.45;cursor:not-allowed}
-.voice-btn--stop{color:#9d4949}
-.record-dot{display:inline-block;width:9px;height:9px;margin-right:6px;border-radius:50%;background:#d84b4b;vertical-align:1px}
-.voice-btn.is-recording .record-dot{animation:recordPulse 1s ease-in-out infinite}
-@keyframes recordPulse{50%{box-shadow:0 0 0 7px rgba(216,75,75,.13)}}
-.record-timer{font-family:var(--serif);font-size:.92rem;color:#607047;min-width:40px;text-align:right}
-.voice-preview{width:100%;height:38px;margin-top:10px}
-.media-help{margin:8px 0 0!important;font-size:.7rem!important;line-height:1.5!important;color:#79836b!important}
-
+/* Wishes */
 .wishes-intro{text-align:center;max-width:520px;margin:-18px auto 30px;color:var(--muted);line-height:1.7}
 .wish-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;max-width:900px;margin:0 auto}
 .wish-card{position:relative;overflow:hidden;padding:22px;border-radius:26px;background:linear-gradient(180deg,rgba(255,255,255,.76),rgba(255,255,255,.5));border:1px solid rgba(196,170,103,.15);box-shadow:0 14px 34px rgba(73,86,49,.07);backdrop-filter:blur(7px)}
 .wish-card::before{content:'“';position:absolute;right:16px;top:-12px;font-family:var(--serif);font-size:5rem;line-height:1;color:rgba(196,170,103,.13)}
 .wish-card__head{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .wish-avatar{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:rgba(127,150,80,.12);font-family:var(--serif);font-size:1rem;color:#52653a;overflow:hidden;flex:0 0 auto}
-.wish-avatar img{width:100%;height:100%;object-fit:cover}
 .wish-meta{min-width:0}
 .wish-name{display:block;font-family:var(--serif);font-size:1.08rem;font-weight:600;color:#2f3a27;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .wish-attendance{display:block;margin-top:2px;font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#74805f}
 .wish-message{margin:0;color:#536049;line-height:1.75;font-size:.93rem;white-space:pre-wrap}
-.wish-photo{display:block;width:100%;max-height:280px;object-fit:cover;border-radius:18px;margin-top:14px;border:1px solid rgba(94,115,54,.1)}
-.wish-audio{width:100%;height:40px;margin-top:14px}
 .wish-date{display:block;margin-top:14px;padding-top:12px;border-top:1px solid rgba(94,115,54,.1);font-size:.7rem;color:#879078}
 .wish-empty{text-align:center;margin:0 auto;color:#7c866d;font-size:.88rem}
 
 @media(max-width:760px){
-  .media-input-grid{grid-template-columns:1fr}
-  .media-input-block{padding:14px;border-radius:16px}
-  .voice-controls{grid-template-columns:1fr auto auto}
   .wish-list{grid-template-columns:1fr;gap:14px}
   .wish-card{padding:18px;border-radius:20px}
   .wishes-intro{font-size:.92rem;margin-top:-12px;margin-bottom:24px}
 }
 @media(max-width:390px){
-  .voice-controls{grid-template-columns:1fr auto}
-  .record-timer{grid-column:1/3;text-align:left}
   .wish-card{padding:16px}
 }
 

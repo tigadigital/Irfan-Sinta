@@ -265,33 +265,6 @@
           </label>
           <label>Ucapan &amp; Doa<textarea name="message" rows="4" required placeholder="Tuliskan doa atau ucapan..."></textarea></label>
 
-          <div class="media-input-grid">
-            <div class="media-input-block">
-              <span class="media-input-title">Foto <small>opsional</small></span>
-              <label class="media-picker" for="rsvpPhoto">
-                <span class="media-picker__icon">▧</span>
-                <span>Pilih Foto</span>
-              </label>
-              <input id="rsvpPhoto" class="media-native-input" type="file" accept="image/*" capture="environment" />
-              <div id="photoPreview" class="photo-preview" hidden>
-                <img id="photoPreviewImg" alt="Preview foto ucapan" />
-                <button id="removePhoto" class="media-clear-btn" type="button">Hapus Foto</button>
-              </div>
-            </div>
-
-            <div class="media-input-block voice-input-block">
-              <span class="media-input-title">Pesan Suara <small>opsional</small></span>
-              <div class="voice-controls">
-                <button id="recordVoice" class="voice-btn" type="button"><span class="record-dot"></span> Rekam</button>
-                <button id="stopVoice" class="voice-btn voice-btn--stop" type="button" disabled>Stop</button>
-                <span id="recordTimer" class="record-timer">00:00</span>
-              </div>
-              <audio id="voicePreview" class="voice-preview" controls hidden></audio>
-              <button id="removeVoice" class="media-clear-btn" type="button" hidden>Hapus Rekaman</button>
-              <p class="media-help">Maks. 60 detik.</p>
-            </div>
-          </div>
-
           <button class="primary-btn" type="submit">Kirim Konfirmasi</button>
           <p id="rsvpNotice" class="notice" role="status"></p>
         </form>

@@ -107,29 +107,11 @@ document.querySelectorAll('.copy-btn').forEach(btn => {
 });
 
 const rsvpForm = document.getElementById('rsvpForm');
-const rsvpPhoto = document.getElementById('rsvpPhoto');
-const photoPreview = document.getElementById('photoPreview');
-const photoPreviewImg = document.getElementById('photoPreviewImg');
-const removePhotoBtn = document.getElementById('removePhoto');
-const recordVoiceBtn = document.getElementById('recordVoice');
-const stopVoiceBtn = document.getElementById('stopVoice');
-const recordTimer = document.getElementById('recordTimer');
-const voicePreview = document.getElementById('voicePreview');
-const removeVoiceBtn = document.getElementById('removeVoice');
 const wishList = document.getElementById('wishList');
 const wishEmpty = document.getElementById('wishEmpty');
 const wishPagination = document.getElementById('wishPagination');
 const WISHES_PER_PAGE = 5;
 let wishCurrentPage = 1;
-let wishBlobUrls = [];
-
-let selectedPhotoBlob = null;
-let recordedAudioBlob = null;
-let mediaRecorder = null;
-let mediaStream = null;
-let voiceChunks = [];
-let recordInterval = null;
-let recordStartedAt = 0;
 
 function openWishDb() {
   return new Promise((resolve, reject) => {
@@ -166,9 +148,6 @@ async function getWishes() {
   });
 }
 
-function blobUrl(blob) {
-  return blob ? URL.createObjectURL(blob) : '';
-}
 
 function initials(name = '') {
   return name.trim().split(/\s+/).slice(0, 2).map(part => part[0]?.toUpperCase() || '').join('') || '♡';
@@ -180,17 +159,6 @@ function formatWishDate(iso) {
   } catch (_) { return ''; }
 }
 
-function clearWishBlobUrls() {
-  wishBlobUrls.forEach(url => URL.revokeObjectURL(url));
-  wishBlobUrls = [];
-}
-
-function wishBlobUrl(blob) {
-  if (!blob) return '';
-  const url = URL.createObjectURL(blob);
-  wishBlobUrls.push(url);
-  return url;
-}
 
 function renderWishPagination(totalPages) {
   if (!wishPagination) return;
@@ -267,7 +235,6 @@ async function renderWishes() {
   const startIndex = (wishCurrentPage - 1) * WISHES_PER_PAGE;
   const pageWishes = wishes.slice(startIndex, startIndex + WISHES_PER_PAGE);
 
-  clearWishBlobUrls();
   wishList.innerHTML = '';
   wishEmpty.hidden = wishes.length > 0;
 
@@ -279,14 +246,8 @@ async function renderWishes() {
     head.className = 'wish-card__head';
     const avatar = document.createElement('div');
     avatar.className = 'wish-avatar';
-    if (wish.photo) {
-      const img = document.createElement('img');
-      img.src = wishBlobUrl(wish.photo);
-      img.alt = '';
-      avatar.appendChild(img);
-    } else {
-      avatar.textContent = initials(wish.name);
-    }
+    avatar.textContent = initials(wish.name);
+
     const meta = document.createElement('div');
     meta.className = 'wish-meta';
     const name = document.createElement('strong');
@@ -304,21 +265,6 @@ async function renderWishes() {
     message.textContent = wish.message || '';
     card.appendChild(message);
 
-    if (wish.photo) {
-      const img = document.createElement('img');
-      img.className = 'wish-photo';
-      img.src = wishBlobUrl(wish.photo);
-      img.alt = `Foto dari ${wish.name || 'tamu'}`;
-      card.appendChild(img);
-    }
-    if (wish.audio) {
-      const audio = document.createElement('audio');
-      audio.className = 'wish-audio';
-      audio.controls = true;
-      audio.preload = 'metadata';
-      audio.src = wishBlobUrl(wish.audio);
-      card.appendChild(audio);
-    }
     const date = document.createElement('small');
     date.className = 'wish-date';
     date.textContent = formatWishDate(wish.savedAt);
@@ -329,99 +275,6 @@ async function renderWishes() {
   renderWishPagination(totalPages);
 }
 
-async function compressPhoto(file) {
-  if (!file) return null;
-  if (file.size <= 1800000) return file;
-  const bitmap = await createImageBitmap(file);
-  const maxSide = 1200;
-  const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
-  const canvas = document.createElement('canvas');
-  canvas.width = Math.round(bitmap.width * scale);
-  canvas.height = Math.round(bitmap.height * scale);
-  canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-  bitmap.close?.();
-  return new Promise(resolve => canvas.toBlob(blob => resolve(blob || file), 'image/jpeg', .82));
-}
-
-rsvpPhoto?.addEventListener('change', async () => {
-  const file = rsvpPhoto.files?.[0];
-  if (!file) return;
-  if (!file.type.startsWith('image/')) return showToast('File harus berupa foto');
-  if (file.size > 8000000) return showToast('Ukuran foto maksimal 8 MB');
-  selectedPhotoBlob = await compressPhoto(file);
-  photoPreviewImg.src = blobUrl(selectedPhotoBlob);
-  photoPreview.hidden = false;
-});
-
-removePhotoBtn?.addEventListener('click', () => {
-  selectedPhotoBlob = null;
-  if (rsvpPhoto) rsvpPhoto.value = '';
-  photoPreview.hidden = true;
-  photoPreviewImg.removeAttribute('src');
-});
-
-function stopMediaStream() {
-  mediaStream?.getTracks().forEach(track => track.stop());
-  mediaStream = null;
-}
-
-function resetRecordTimer() {
-  clearInterval(recordInterval);
-  recordInterval = null;
-  recordTimer.textContent = '00:00';
-}
-
-recordVoiceBtn?.addEventListener('click', async () => {
-  if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
-    showToast('Browser ini belum mendukung rekam suara');
-    return;
-  }
-  try {
-    mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    voiceChunks = [];
-    const preferred = ['audio/webm;codecs=opus','audio/webm','audio/mp4'].find(t => MediaRecorder.isTypeSupported?.(t));
-    mediaRecorder = preferred ? new MediaRecorder(mediaStream, { mimeType: preferred }) : new MediaRecorder(mediaStream);
-    mediaRecorder.ondataavailable = e => { if (e.data?.size) voiceChunks.push(e.data); };
-    mediaRecorder.onstop = () => {
-      recordedAudioBlob = new Blob(voiceChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
-      voicePreview.src = blobUrl(recordedAudioBlob);
-      voicePreview.hidden = false;
-      removeVoiceBtn.hidden = false;
-      recordVoiceBtn.classList.remove('is-recording');
-      recordVoiceBtn.disabled = false;
-      stopVoiceBtn.disabled = true;
-      stopMediaStream();
-      resetRecordTimer();
-    };
-    mediaRecorder.start(250);
-    recordStartedAt = Date.now();
-    recordVoiceBtn.classList.add('is-recording');
-    recordVoiceBtn.disabled = true;
-    stopVoiceBtn.disabled = false;
-    recordInterval = setInterval(() => {
-      const seconds = Math.floor((Date.now() - recordStartedAt) / 1000);
-      recordTimer.textContent = `00:${String(seconds).padStart(2, '0')}`;
-      if (seconds >= 60 && mediaRecorder?.state === 'recording') mediaRecorder.stop();
-    }, 500);
-  } catch (_) {
-    showToast('Izin mikrofon tidak diberikan');
-    stopMediaStream();
-  }
-});
-
-stopVoiceBtn?.addEventListener('click', () => {
-  if (mediaRecorder?.state === 'recording') mediaRecorder.stop();
-});
-
-removeVoiceBtn?.addEventListener('click', () => {
-  recordedAudioBlob = null;
-  voicePreview.hidden = true;
-  voicePreview.pause();
-  voicePreview.removeAttribute('src');
-  removeVoiceBtn.hidden = true;
-  resetRecordTimer();
-});
-
 rsvpForm.addEventListener('submit', async e => {
   e.preventDefault();
   const data = Object.fromEntries(new FormData(rsvpForm));
@@ -429,21 +282,13 @@ rsvpForm.addEventListener('submit', async e => {
     name: String(data.name || '').trim(),
     attendance: String(data.attendance || ''),
     message: String(data.message || '').trim(),
-    photo: selectedPhotoBlob,
-    audio: recordedAudioBlob,
     savedAt: new Date().toISOString()
   };
   try {
-    localStorage.setItem('irfan-sinta-rsvp', JSON.stringify({ name: entry.name, attendance: entry.attendance, message: entry.message, savedAt: entry.savedAt }));
+    localStorage.setItem('irfan-sinta-rsvp', JSON.stringify(entry));
     await saveWish(entry);
-    document.getElementById('rsvpNotice').textContent = 'Konfirmasi dan ucapan tersimpan di perangkat ini. Terima kasih.';
+    document.getElementById('rsvpNotice').textContent = 'Konfirmasi dan ucapan tersimpan. Terima kasih.';
     rsvpForm.reset();
-    selectedPhotoBlob = null;
-    recordedAudioBlob = null;
-    photoPreview.hidden = true;
-    voicePreview.hidden = true;
-    removeVoiceBtn.hidden = true;
-    resetRecordTimer();
     wishCurrentPage = 1;
     await renderWishes();
     document.querySelector('.wishes')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
