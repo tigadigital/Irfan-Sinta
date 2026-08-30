@@ -2,6 +2,8 @@ const body = document.body;
 const cover = document.getElementById('cover');
 const main = document.getElementById('mainContent');
 const openBtn = document.getElementById('openInvitation');
+const videoIntro = document.getElementById('videoIntro');
+const openingVideo = document.getElementById('openingVideo');
 const music = document.getElementById('bgMusic');
 const musicBtn = document.getElementById('musicBtn');
 const guestName = document.getElementById('guestName');
@@ -28,16 +30,48 @@ async function startMusic() {
   }
 }
 
+const VIDEO_INTRO_DURATION = 10000;
+let videoIntroTimer;
+let videoIntroFinished = false;
+
+function finishVideoIntro() {
+  if (videoIntroFinished) return;
+  videoIntroFinished = true;
+  clearTimeout(videoIntroTimer);
+
+  cover.classList.add('is-open');
+  body.classList.remove('locked');
+  main.removeAttribute('inert');
+  document.querySelector('.hero .reveal')?.classList.add('is-visible');
+
+  videoIntro?.classList.add('is-ending');
+  setTimeout(() => {
+    openingVideo?.pause();
+    videoIntro?.classList.remove('is-active', 'is-ending');
+    videoIntro?.setAttribute('aria-hidden', 'true');
+  }, 650);
+}
+
 openBtn.addEventListener('click', () => {
   cover.classList.add('is-opening');
   startMusic();
-  setTimeout(() => {
-    body.classList.remove('locked');
-    main.removeAttribute('inert');
-    document.querySelector('.hero .reveal')?.classList.add('is-visible');
-  }, 140);
-  setTimeout(() => cover.classList.add('is-open'), 860);
+
+  if (!videoIntro || !openingVideo) {
+    finishVideoIntro();
+    return;
+  }
+
+  videoIntroFinished = false;
+  openingVideo.currentTime = 0;
+  videoIntro.setAttribute('aria-hidden', 'false');
+  videoIntro.classList.add('is-active');
+
+  openingVideo.play().catch(() => finishVideoIntro());
+  videoIntroTimer = setTimeout(finishVideoIntro, VIDEO_INTRO_DURATION);
 });
+
+openingVideo?.addEventListener('ended', finishVideoIntro);
+openingVideo?.addEventListener('error', finishVideoIntro);
 
 musicBtn.addEventListener('click', async () => {
   if (music.paused) await startMusic();
