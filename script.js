@@ -1,3 +1,27 @@
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  onSnapshot,
+  orderBy,
+  query,
+  serverTimestamp
+} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBLzkcKClg2ZGN0qa18UmIHAfLySfM2DqI",
+  authDomain: "wedding-irfan-sinta.firebaseapp.com",
+  projectId: "wedding-irfan-sinta",
+  storageBucket: "wedding-irfan-sinta.firebasestorage.app",
+  messagingSenderId: "581994856980",
+  appId: "1:581994856980:web:5a1a4b53c9d1490c0add01",
+  measurementId: "G-LWMWH4R2P8"
+};
+
+const firebaseApp = initializeApp(firebaseConfig);
+const firestore = getFirestore(firebaseApp);
+
 const body = document.body;
 const cover = document.getElementById('cover');
 const main = document.getElementById('mainContent');
@@ -147,38 +171,25 @@ const wishPagination = document.getElementById('wishPagination');
 const WISHES_PER_PAGE = 5;
 let wishCurrentPage = 1;
 
-function openWishDb() {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open('irfan-sinta-wishes', 1);
-    request.onupgradeneeded = () => {
-      const db = request.result;
-      if (!db.objectStoreNames.contains('wishes')) {
-        db.createObjectStore('wishes', { keyPath: 'id', autoIncrement: true });
-      }
-    };
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
-}
+let wishesCache = [];
 
-async function saveWish(entry) {
-  const db = await openWishDb();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction('wishes', 'readwrite');
-    tx.objectStore('wishes').add(entry);
-    tx.oncomplete = () => { db.close(); resolve(); };
-    tx.onerror = () => { db.close(); reject(tx.error); };
-  });
-}
+function subscribeToWishes() {
+  const wishesQuery = query(
+    collection(firestore, 'wishes'),
+    orderBy('createdAt', 'desc')
+  );
 
-async function getWishes() {
-  const db = await openWishDb();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction('wishes', 'readonly');
-    const request = tx.objectStore('wishes').getAll();
-    request.onsuccess = () => resolve(request.result || []);
-    request.onerror = () => reject(request.error);
-    tx.oncomplete = () => db.close();
+  return onSnapshot(wishesQuery, snapshot => {
+    wishesCache = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    renderWishes();
+  }, error => {
+    console.error('Firebase wishes listener error:', error);
+    wishesCache = [];
+    renderWishes();
+    if (wishEmpty) wishEmpty.textContent = 'Ucapan belum dapat dimuat.';
   });
 }
 
@@ -187,9 +198,10 @@ function initials(name = '') {
   return name.trim().split(/\s+/).slice(0, 2).map(part => part[0]?.toUpperCase() || '').join('') || '♡';
 }
 
-function formatWishDate(iso) {
+function formatWishDate(value) {
   try {
-    return new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(iso));
+    const date = value?.toDate ? value.toDate() : new Date(value);
+    return new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }).format(date);
   } catch (_) { return ''; }
 }
 
@@ -258,11 +270,9 @@ function renderWishPagination(totalPages) {
   }));
 }
 
-async function renderWishes() {
+function renderWishes() {
   if (!wishList) return;
-  let wishes = [];
-  try { wishes = await getWishes(); } catch (_) { wishes = []; }
-  wishes.sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt));
+  const wishes = wishesCache;
 
   const totalPages = Math.max(1, Math.ceil(wishes.length / WISHES_PER_PAGE));
   wishCurrentPage = Math.min(Math.max(1, wishCurrentPage), totalPages);
@@ -270,6 +280,7 @@ async function renderWishes() {
   const pageWishes = wishes.slice(startIndex, startIndex + WISHES_PER_PAGE);
 
   wishList.innerHTML = '';
+  wishEmpty.textContent = 'Belum ada ucapan.';
   wishEmpty.hidden = wishes.length > 0;
 
   pageWishes.forEach(wish => {
@@ -301,7 +312,7 @@ async function renderWishes() {
 
     const date = document.createElement('small');
     date.className = 'wish-date';
-    date.textContent = formatWishDate(wish.savedAt);
+    date.textContent = formatWishDate(wish.createdAt);
     card.appendChild(date);
     wishList.appendChild(card);
   });
@@ -315,23 +326,36 @@ rsvpForm.addEventListener('submit', async e => {
   const entry = {
     name: String(data.name || '').trim(),
     attendance: String(data.attendance || ''),
-    message: String(data.message || '').trim(),
-    savedAt: new Date().toISOString()
+    message: String(data.message || '').trim()
   };
+
+  const submitButton = rsvpForm.querySelector('button[type="submit"]');
+  if (submitButton) submitButton.disabled = true;
+
   try {
-    localStorage.setItem('irfan-sinta-rsvp', JSON.stringify(entry));
-    await saveWish(entry);
+    localStorage.setItem('irfan-sinta-rsvp', JSON.stringify({
+      ...entry,
+      savedAt: new Date().toISOString()
+    }));
+
+    await addDoc(collection(firestore, 'wishes'), {
+      ...entry,
+      createdAt: serverTimestamp()
+    });
+
     document.getElementById('rsvpNotice').textContent = 'Konfirmasi dan ucapan tersimpan. Terima kasih.';
     rsvpForm.reset();
     wishCurrentPage = 1;
-    await renderWishes();
     document.querySelector('.wishes')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  } catch (_) {
+  } catch (error) {
+    console.error('Firebase RSVP save error:', error);
     document.getElementById('rsvpNotice').textContent = 'Gagal menyimpan. Coba lagi.';
+  } finally {
+    if (submitButton) submitButton.disabled = false;
   }
 });
 
-renderWishes();
+subscribeToWishes();
 
 const petalField = document.getElementById('petalField');
 for (let i = 0; i < 28; i++) {
